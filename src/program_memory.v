@@ -12,8 +12,8 @@
 //   No write capability - program is fixed at synthesis time
 //   1-cycle read latency (registered output)
 //
-// Default Program (8 instructions):
-//   Demonstrates a simple cell copy loop with I/O
+// Default Program (16 instructions):
+//   Demonstrates a more complex cell manipulation program
 //   Address | Instruction | Description
 //   --------|-------------|------------
 //   0       | +3          | cell[0] = 3
@@ -23,13 +23,21 @@
 //   4       | <           |   Move back to cell[0]
 //   5       | -1          |   cell[0]--
 //   6       | ]           | Jump to addr 1 if cell[0] != 0
-//   7       | .           | Output cell[0] (result: 0x00 after loop)
+//   7       | >           | Move to cell[1] (result)
+//   8       | [           | Loop while cell[1] != 0:
+//   9       | >           |   Move to cell[2]
+//   10      | +1          |   cell[2]++
+//   11      | <           |   Move back to cell[1]
+//   12      | -1          |   cell[1]--
+//   13      | ]           | Jump to addr 8 if cell[1] != 0
+//   14      | >           | Move to cell[2]
+//   15      | .           | Output cell[2] (result: 0x03)
 //
-//   Result: cell[0]=0, cell[1]=3, outputs 0x00 from cell[0]
+//   Result: cell[0]=0, cell[1]=0, cell[2]=3, outputs 0x03 from cell[2]
 //
 // Parameters:
 //   DATA_W: Instruction width in bits (default 8)
-//   DEPTH:  Number of memory locations (default 8, must be power of 2)
+//   DEPTH:  Number of memory locations (default 16, must be power of 2)
 //
 // Interfaces:
 //   clk_i:   System clock (used for registered output)
@@ -43,7 +51,7 @@
 `timescale 1ns/1ps
 module program_memory #(
     parameter integer DATA_W = 8,
-    parameter integer DEPTH  = 8
+    parameter integer DEPTH  = 16
 ) (
     input  wire                      clk_i,
     input  wire                      rst_i,    // Active-low reset
@@ -62,16 +70,24 @@ module program_memory #(
         input [$clog2(DEPTH)-1:0] addr;
         begin
             case (addr)
-                // Demo: Cell copy loop with I/O
-                3'd0:  rom_data = 8'b010_00011;  // +3       cell[0] = 3
-                3'd1:  rom_data = 8'b110_00101;  // [ +5     JZ forward 5 (to addr 6) if cell[0]==0
-                3'd2:  rom_data = 8'b000_00001;  // >        move to cell[1]
-                3'd3:  rom_data = 8'b010_00001;  // +1       cell[1]++
-                3'd4:  rom_data = 8'b001_00001;  // <        move back to cell[0]
-                3'd5:  rom_data = 8'b011_00001;  // -1       cell[0]--
-                3'd6:  rom_data = 8'b111_11011;  // ] -5     JNZ back -5 (to addr 1) if cell[0]!=0
-                3'd7:  rom_data = 8'b100_00000;  // .        output cell[0] (should be 0x00 after loop)
-                // Note: After loop, cell[0]=0, cell[1]=3
+                // Demo: Nested loop copying cell[0] → cell[1] → cell[2]
+                4'd0:  rom_data = 8'b010_00011;  // +3       cell[0] = 3
+                4'd1:  rom_data = 8'b110_00101;  // [ +5     JZ forward 5 (to addr 6) if cell[0]==0
+                4'd2:  rom_data = 8'b000_00001;  // >        move to cell[1]
+                4'd3:  rom_data = 8'b010_00001;  // +1       cell[1]++
+                4'd4:  rom_data = 8'b001_00001;  // <        move back to cell[0]
+                4'd5:  rom_data = 8'b011_00001;  // -1       cell[0]--
+                4'd6:  rom_data = 8'b111_11011;  // ] -5     JNZ back -5 (to addr 1) if cell[0]!=0
+                4'd7:  rom_data = 8'b000_00001;  // >        move to cell[1]
+                4'd8:  rom_data = 8'b110_00101;  // [ +5     JZ forward 5 (to addr 13) if cell[1]==0
+                4'd9:  rom_data = 8'b000_00001;  // >        move to cell[2]
+                4'd10: rom_data = 8'b010_00001;  // +1       cell[2]++
+                4'd11: rom_data = 8'b001_00001;  // <        move back to cell[1]
+                4'd12: rom_data = 8'b011_00001;  // -1       cell[1]--
+                4'd13: rom_data = 8'b111_11011;  // ] -5     JNZ back -5 (to addr 8) if cell[1]!=0
+                4'd14: rom_data = 8'b000_00001;  // >        move to cell[2]
+                4'd15: rom_data = 8'b100_00000;  // .        output cell[2] (should be 0x03)
+                // Note: After loops, cell[0]=0, cell[1]=0, cell[2]=3
                 default: rom_data = 8'h00;       // Safety: HALT for unused addresses
             endcase
         end

@@ -12,7 +12,7 @@
 //   Synchronous memory interfaces with 1-cycle read latency
 //
 // Parameters:
-//   ADDR_W:      Program memory address width (default 3 = 8 instructions)
+//   ADDR_W:      Program memory address width (default 4 = 16 instructions)
 //   INSTR_W:     Instruction width (default 8 bits)
 //   CELL_W:      Data cell width (default 8 bits)
 //   TAPE_ADDR_W: Data tape address width (default 3 = 8 cells)

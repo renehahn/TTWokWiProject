@@ -25,8 +25,7 @@
 //   Dedicated Outputs (uo_out):
 //     uo[0]:     UART TX serial output (for Brainfuck '.' output command)
 //     uo[1]:     CPU busy status (high when executing)
-//     uo[4:2]:   Program counter [2:0]
-//     uo[5]:     Unused (was PC[3])
+//     uo[5:2]:   Program counter [3:0]
 //     uo[7:6]:   Current cell value [6:5] (upper 2 bits)
 //=============================================================================
 
@@ -44,9 +43,9 @@ module tt_um_rh_bf_top (
 );
 
     //=========================================================================
-    // Parameters - REDUCED FOR AREA OPTIMIZATION
+    // Parameters - UPDATED FOR 16 INSTRUCTIONS
     //=========================================================================
-    localparam ADDR_W = 3;              // 8 program memory locations (reduced from 16)
+    localparam ADDR_W = 4;              // 16 program memory locations (increased from 8)
     localparam TAPE_ADDR_W = 3;         // 8 tape cells
     localparam CLK_FREQ = 50000000;     // 50 MHz system clock
     localparam BAUD_RATE = 38400;       // UART baud rate (reduced from 115200)
@@ -54,7 +53,7 @@ module tt_um_rh_bf_top (
     //=========================================================================
     // Internal Signals
     //=========================================================================
-    wire [2:0] pc;              // Program counter (3-bit, reduced from 4-bit)
+    wire [3:0] pc;              // Program counter (4-bit for 16 instructions)
     wire [2:0] dp;              // Data pointer
     wire [7:0] cell_data;       // Current cell value
     wire       cpu_busy;        // CPU busy status
@@ -75,8 +74,7 @@ module tt_um_rh_bf_top (
     // Dedicated Output Assignment
     //=========================================================================
     assign uo_out[1]   = cpu_busy;         // CPU busy status
-    assign uo_out[4:2] = pc;               // Program counter [2:0] (3-bit, reduced from 4-bit)
-    assign uo_out[5]   = 1'b0;             // Unused (was pc[3])
+    assign uo_out[5:2] = pc;               // Program counter [3:0] (full 4-bit for 16 instructions)
     assign uo_out[7:6] = cell_data[6:5];   // Current cell value [6:5] (upper 2 bits)
 
     //=========================================================================
@@ -101,7 +99,7 @@ module tt_um_rh_bf_top (
         .halt_i        (ui_in[2]),     // Halt execution from ui[2]
         
         // Debug outputs
-        .pc_o          (pc),           // Program counter to uo[4:2]
+        .pc_o          (pc),           // Program counter to uo[5:2]
         .dp_o          (dp),           // Data pointer to uio[2:0]
         .cell_data_o   (cell_data),    // Cell data to uio[7:3] and uo[7:6]
         .cpu_busy_o    (cpu_busy)      // CPU busy to uo[1]

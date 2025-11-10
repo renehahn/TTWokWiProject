@@ -8,7 +8,7 @@ TinyBF is a complete hardware implementation of a Brainfuck interpreter designed
 
 - **Complete Brainfuck interpreter** with all 8 commands plus optimized instruction encoding
 - **11-state FSM CPU core** with binary encoding for minimal gate count
-- **8×8-bit ROM program memory** containing hardcoded demonstration program
+- **16×8-bit ROM program memory** containing hardcoded demonstration program
 - **8×8-bit RAM tape memory** (data cells) for program execution
 - **Full UART subsystem** (TX/RX) at 38400 baud for I/O operations
 - **Optimized instruction set** with 5-bit arguments for compact programs
@@ -36,8 +36,7 @@ TinyBF is a complete hardware implementation of a Brainfuck interpreter designed
 ### Outputs  
 - `uo[0]` - UART TX (serial output for `.` command)
 - `uo[1]` - CPU_BUSY (execution status)
-- `uo[4:2]` - Program Counter [2:0] (addresses 0-7)
-- `uo[5]` - Unused (was PC[3])
+- `uo[5:2]` - Program Counter [3:0] (addresses 0-15)
 - `uo[7:6]` - Cell Value [6:5]
 
 ### Bidirectional (all outputs)
@@ -46,7 +45,7 @@ TinyBF is a complete hardware implementation of a Brainfuck interpreter designed
 
 ## Hardcoded Program
 
-The ROM contains a cell copy loop demonstration:
+The ROM contains a nested loop demonstration (16 instructions):
 
 ```brainfuck
 +3     cell[0] = 3
@@ -56,16 +55,26 @@ The ROM contains a cell copy loop demonstration:
 <        Move back to cell[0]
 -        cell[0]--
 ]      End loop
-.      Output cell[0] (= 0x00)
+>      Move to cell[1]
+[      Loop while cell[1] != 0:
+>        Move to cell[2]
++        cell[2]++
+<        Move back to cell[1]
+-        cell[1]--
+]      End loop
+>      Move to cell[2]
+.      Output cell[2] (= 0x03)
 ```
 
-**Result:** Copies value 3 from cell[0] to cell[1], outputs 0x00 via UART.
+**Result:** Nested copy from cell[0] → cell[1] → cell[2], outputs 0x03 via UART.
 
 **Program Flow:**
 1. Initialize cell[0] = 3
-2. Loop 3 times: increment cell[1], decrement cell[0]
-3. After loop: cell[0]=0, cell[1]=3
-4. Output cell[0] (0x00) via UART TX
+2. First loop (3 iterations): copy cell[0] to cell[1]
+3. Move to cell[1]
+4. Second loop (3 iterations): copy cell[1] to cell[2]
+5. After loops: cell[0]=0, cell[1]=0, cell[2]=3
+6. Output cell[2] (0x03) via UART TX
 
 
 ## What is Tiny Tapeout?

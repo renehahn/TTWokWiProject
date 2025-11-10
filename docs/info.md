@@ -17,7 +17,7 @@ The system consists of five main components:
 
 1. **Control Unit** - An 11-state finite state machine (FSM) that serves as the CPU core. It fetches instructions, decodes them, and orchestrates all operations including memory access and I/O. The FSM uses binary encoding for optimal gate count.
 
-2. **Program Memory (ROM)** - 8×8-bit read-only memory containing a fixed demonstration program. Each instruction is encoded as an 8-bit value: 3 bits for the opcode and 5 bits for a signed argument (enabling optimizations like `+5` instead of five separate `+` instructions).
+2. **Program Memory (ROM)** - 16×8-bit read-only memory containing a fixed demonstration program. Each instruction is encoded as an 8-bit value: 3 bits for the opcode and 5 bits for a signed argument (enabling optimizations like `+5` instead of five separate `+` instructions).
 
 3. **Tape Memory (RAM)** - 8×8-bit synchronous RAM representing the Brainfuck data tape with 8 cells. This is the working memory where Brainfuck programs manipulate data.
 
@@ -27,7 +27,7 @@ The system consists of five main components:
 
 ### Hardcoded Program
 
-The ROM contains a cell copy loop that demonstrates loop control, arithmetic, and pointer movement:
+The ROM contains a nested loop that demonstrates loop control, arithmetic, and pointer movement (16 instructions):
 
 ```
 Address | Instruction | Description
@@ -39,10 +39,18 @@ Address | Instruction | Description
 4       | <           | Move back to cell[0]
 5       | -1          | cell[0]--
 6       | ] -5        | Jump back -5 if cell[0] != 0 (to address 1)
-7       | .           | Output cell[0] (should be 0x00 after loop)
+7       | >           | Move to cell[1]
+8       | [ +5        | Jump forward 5 if cell[1] == 0 (to address 13)
+9       | >           | Move to cell[2]
+10      | +1          | cell[2]++
+11      | <           | Move back to cell[1]
+12      | -1          | cell[1]--
+13      | ] -5        | Jump back -5 if cell[1] != 0 (to address 8)
+14      | >           | Move to cell[2]
+15      | .           | Output cell[2] (should be 0x03)
 ```
 
-**Program behavior:** Initializes cell[0] to 3, then loops 3 times copying the value to cell[1]. After the loop, cell[0]=0 and cell[1]=3. Finally outputs cell[0] (0x00) via UART.
+**Program behavior:** Initializes cell[0] to 3, copies it to cell[1] via first loop, then copies cell[1] to cell[2] via second loop. After execution, cell[0]=0, cell[1]=0, cell[2]=3. Finally outputs cell[2] (0x03) via UART.
 
 ### Instruction Set
 
@@ -81,7 +89,7 @@ The program ROM provides registered outputs with 1-cycle latency, maintaining ti
 **Outputs:**
 - `uo[0]` - UART TX: Serial output for Brainfuck `.` command (38400 baud, 8N1)
 - `uo[1]` - CPU_BUSY: High when CPU is actively executing
-- `uo[4:2]` - Program counter bits [2:0]: Current instruction address (0-7)
+- `uo[5:2]` - Program counter bits [3:0]: Current instruction address (0-15)
 - `uo[7:6]` - Cell value bits [6:5]: Upper 2 bits of current cell
 
 **Bidirectional (configured as outputs):**
@@ -95,20 +103,20 @@ The program ROM provides registered outputs with 1-cycle latency, maintaining ti
 2. **Start Execution**: Pulse the START input (`ui[1]`) high for at least one clock cycle. The CPU will begin executing the hardcoded ROM program.
 
 3. **Expected Behavior**:
-   - **Loop execution**: The program will execute a cell copy loop 3 times
-   - **Final state**: cell[0]=0, cell[1]=3, DP=0
-   - **UART output**: One byte 0x00 sent via UART TX
-   - **Completion**: Program counter wraps to 0 after instruction 7
+   - **Loop execution**: The program executes two nested loops
+   - **Final state**: cell[0]=0, cell[1]=0, cell[2]=3, DP=2
+   - **UART output**: One byte 0x03 sent via UART TX
+   - **Completion**: Program counter wraps to 0 after instruction 15
 
 4. **Monitor Execution**: 
    - Watch `CPU_BUSY` (`uo[1]`) to see when the program is running
-   - Observe the program counter on `uo[4:2]` cycling through addresses 0-7
-   - Monitor the data pointer on `uio[2:0]` switching between 0 and 1
+   - Observe the program counter on `uo[5:2]` cycling through addresses 0-15
+   - Monitor the data pointer on `uio[2:0]` switching between 0, 1, and 2
    - Track cell values on `{uo[7:6], uio[7:3]}` changing during arithmetic operations
 
 5. **UART Communication**:
    - Connect a UART terminal to `ui[0]` (RX) and `uo[0]` (TX) at 38400 baud, 8N1 format
-   - You should receive byte `0x00` after the loop completes
+   - You should receive byte `0x03` after the loops complete
    - The `,` (input) command is available in the instruction set but not used in this demo program
 
 6. **Program Restart**: To run the program again, pulse START (`ui[1]`) or reset the system.

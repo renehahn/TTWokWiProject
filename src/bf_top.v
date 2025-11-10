@@ -12,7 +12,7 @@
 //   Program is hardcoded in ROM - no external programming interface
 //
 // Parameters:
-//   ADDR_W:      Program memory address width (default 3 = 8 instructions)
+//   ADDR_W:      Program memory address width (default 4 = 16 instructions)
 //   TAPE_ADDR_W: Data tape address width (default 3 = 8 cells)
 //   CLK_FREQ:    System clock frequency in Hz (default 50MHz)
 //   BAUD_RATE:   UART baud rate in bps (default 38400)
@@ -32,7 +32,7 @@
 
 `timescale 1ns/1ps
 module bf_top #(
-    parameter ADDR_W = 3,              // Program address width (8 entries)
+    parameter ADDR_W = 4,              // Program address width (16 entries)
     parameter TAPE_ADDR_W = 3,         // Tape address width (8 cells)
     parameter CLK_FREQ = 50000000,     // System clock frequency (Hz)
     parameter BAUD_RATE = 38400        // UART baud rate (reduced from 115200 to save area)

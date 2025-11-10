@@ -29,6 +29,7 @@
 //     uo[7:6]:   Current cell value [6:5] (upper 2 bits)
 //=============================================================================
 
+`timescale 1ns/1ps
 `default_nettype none
 
 module tt_um_rh_bf_top (

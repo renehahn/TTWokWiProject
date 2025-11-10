@@ -77,27 +77,38 @@ module uart_rx (
                     tick_cnt <= 4'd0;
                     bit_cnt <= 3'd0;
                     
-                    // Detect start bit (falling edge)
-                    if (!rx) begin
+                    // Detect start bit (falling edge) - ONLY when line is low
+                    // and we're at a tick boundary to ensure clean detection
+                    if (baud_tick_16x_i && !rx) begin
                         state <= START_BIT;
                         rx_busy_o <= 1'b1;
+                        tick_cnt <= 4'd1;  // Start counting from 1
                     end
                 end
 
                 START_BIT: begin
                     if (baud_tick_16x_i) begin
+                        tick_cnt <= tick_cnt + 1'b1;
+                        
                         // Sample at middle of bit (tick 7 of 0-15)
                         if (tick_cnt == 4'd7) begin
                             if (!rx) begin
-                                // Valid start bit confirmed, start receiving data
-                                state <= DATA_BITS;
-                                tick_cnt <= 4'd0;
+                                // Valid start bit confirmed
+                                // Continue to tick 15, then move to DATA_BITS
                             end else begin
                                 // False start bit (glitch), return to idle
                                 state <= IDLE;
+                                rx_busy_o <= 1'b0;
                             end
-                        end else begin
-                            tick_cnt <= tick_cnt + 1'b1;
+                        end else if (tick_cnt == 4'd15) begin
+                            // End of start bit period, move to data bits
+                            if (!rx || state == START_BIT) begin  // Recheck start bit was valid
+                                state <= DATA_BITS;
+                                tick_cnt <= 4'd0;
+                            end else begin
+                                state <= IDLE;
+                                rx_busy_o <= 1'b0;
+                            end
                         end
                     end
                 end
@@ -110,25 +121,23 @@ module uart_rx (
                         if (tick_cnt == 4'd7) begin
                             // Sample data bit (LSB first)
                             shift_reg <= {rx, shift_reg[7:1]};
+                            bit_cnt <= bit_cnt + 1'b1;
+                        end else if (tick_cnt == 4'd15) begin
+                            // End of bit period
+                            tick_cnt <= 4'd0;
                             
                             // Check if all 8 bits received
-                            if (bit_cnt == 3'd7) begin
+                            if (bit_cnt == 3'd0) begin  // bit_cnt wraps to 0 after 7→8
                                 state <= STOP_BIT;
-                                tick_cnt <= 4'd0;
-                            end else begin
-                                bit_cnt <= bit_cnt + 1'b1;
                             end
-                        end
-                        
-                        // Reset tick counter for next bit
-                        if (tick_cnt == 4'd15) begin
-                            tick_cnt <= 4'd0;
                         end
                     end
                 end
 
                 STOP_BIT: begin
                     if (baud_tick_16x_i) begin
+                        tick_cnt <= tick_cnt + 1'b1;
+                        
                         // Sample stop bit at middle (tick 7)
                         if (tick_cnt == 4'd7) begin
                             if (rx) begin
@@ -137,16 +146,18 @@ module uart_rx (
                                 rx_valid_o <= 1'b1;
                             end
                             // Note: On framing error (stop bit low), data is discarded
-                            // Return to idle regardless of stop bit state
+                        end else if (tick_cnt == 4'd15) begin
+                            // End of stop bit period - return to idle
                             state <= IDLE;
-                        end else begin
-                            tick_cnt <= tick_cnt + 1'b1;
+                            rx_busy_o <= 1'b0;
+                            tick_cnt <= 4'd0;
                         end
                     end
                 end
 
                 default: begin
                     state <= IDLE;
+                    rx_busy_o <= 1'b0;
                 end
             endcase
         end

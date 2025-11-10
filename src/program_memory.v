@@ -13,27 +13,30 @@
 //   1-cycle read latency (registered output)
 //
 // Default Program (16 instructions):
-//   Demonstrates a more complex cell manipulation program
+//   Character case converter: lowercase → uppercase via UART
+//   Demonstrates: Input, arithmetic, conditional, output
 //   Address | Instruction | Description
 //   --------|-------------|------------
-//   0       | +3          | cell[0] = 3
-//   1       | [           | Loop while cell[0] != 0:
-//   2       | >           |   Move to cell[1]
-//   3       | +1          |   cell[1]++
-//   4       | <           |   Move back to cell[0]
-//   5       | -1          |   cell[0]--
-//   6       | ]           | Jump to addr 1 if cell[0] != 0
-//   7       | >           | Move to cell[1] (result)
-//   8       | [           | Loop while cell[1] != 0:
-//   9       | >           |   Move to cell[2]
-//   10      | +1          |   cell[2]++
-//   11      | <           |   Move back to cell[1]
-//   12      | -1          |   cell[1]--
-//   13      | ]           | Jump to addr 8 if cell[1] != 0
-//   14      | >           | Move to cell[2]
-//   15      | .           | Output cell[2] (result: 0x03)
+//   0       | ,           | Read character from UART into cell[0]
+//   1       | >           | Move to cell[1] (working cell)
+//   2       | +10         | cell[1] = 10 (newline character)
+//   3       | <           | Back to cell[0]
+//   4       | [           | Loop while cell[0] != 0 (not null):
+//   5       | -15         | Subtract 15
+//   6       | -15         | Subtract 15 (total -30)
+//   7       | -2          | Subtract 2 more (total -32: lowercase→uppercase)
+//   8       | .           | Output converted character via UART
+//   9       | ,           | Read next character
+//   10      | ]           | Jump back if cell[0] != 0
+//   11      | >           | Move to cell[1]
+//   12      | .           | Output newline (10)
+//   13-15   | HALT        | Safety: halt at end
 //
-//   Result: cell[0]=0, cell[1]=0, cell[2]=3, outputs 0x03 from cell[2]
+//   Example: Input "abc" → Output "ABC\n"
+//   - Reads characters via UART RX (,)
+//   - Converts lowercase to uppercase by subtracting 32 (via -15, -15, -2)
+//   - Outputs via UART TX (.)
+//   - Ends with newline
 //
 // Parameters:
 //   DATA_W: Instruction width in bits (default 8)
@@ -70,24 +73,24 @@ module program_memory #(
         input [$clog2(DEPTH)-1:0] addr;
         begin
             case (addr)
-                // Demo: Nested loop copying cell[0] → cell[1] → cell[2]
-                4'd0:  rom_data = 8'b010_00011;  // +3       cell[0] = 3
-                4'd1:  rom_data = 8'b110_00101;  // [ +5     JZ forward 5 (to addr 6) if cell[0]==0
-                4'd2:  rom_data = 8'b000_00001;  // >        move to cell[1]
-                4'd3:  rom_data = 8'b010_00001;  // +1       cell[1]++
-                4'd4:  rom_data = 8'b001_00001;  // <        move back to cell[0]
-                4'd5:  rom_data = 8'b011_00001;  // -1       cell[0]--
-                4'd6:  rom_data = 8'b111_11011;  // ] -5     JNZ back -5 (to addr 1) if cell[0]!=0
-                4'd7:  rom_data = 8'b000_00001;  // >        move to cell[1]
-                4'd8:  rom_data = 8'b110_00101;  // [ +5     JZ forward 5 (to addr 13) if cell[1]==0
-                4'd9:  rom_data = 8'b000_00001;  // >        move to cell[2]
-                4'd10: rom_data = 8'b010_00001;  // +1       cell[2]++
-                4'd11: rom_data = 8'b001_00001;  // <        move back to cell[1]
-                4'd12: rom_data = 8'b011_00001;  // -1       cell[1]--
-                4'd13: rom_data = 8'b111_11011;  // ] -5     JNZ back -5 (to addr 8) if cell[1]!=0
-                4'd14: rom_data = 8'b000_00001;  // >        move to cell[2]
-                4'd15: rom_data = 8'b100_00000;  // .        output cell[2] (should be 0x03)
-                // Note: After loops, cell[0]=0, cell[1]=0, cell[2]=3
+                // Demo: UART case converter (lowercase → UPPERCASE)
+                // Shows: Input (,), Output (.), Arithmetic (-32 via -15 and -15 and -2), Loops ([])
+                4'd0:  rom_data = 8'b101_00000;  // ,        Read character from UART into cell[0]
+                4'd1:  rom_data = 8'b000_00001;  // >        Move to cell[1]
+                4'd2:  rom_data = 8'b010_01010;  // +10      cell[1] = 10 (newline character)
+                4'd3:  rom_data = 8'b001_00001;  // <        Move back to cell[0]
+                4'd4:  rom_data = 8'b110_00110;  // [ +6     JZ forward 6 (to addr 10) if cell[0]==0
+                4'd5:  rom_data = 8'b011_01111;  // -15      Subtract 15
+                4'd6:  rom_data = 8'b011_01111;  // -15      Subtract 15 (total -30, close to -32)
+                4'd7:  rom_data = 8'b011_00010;  // -2       Subtract 2 more (total -32)
+                4'd8:  rom_data = 8'b100_00000;  // .        Output converted character
+                4'd9:  rom_data = 8'b101_00000;  // ,        Read next character
+                4'd10: rom_data = 8'b111_11010;  // ] -6     JNZ back -6 (to addr 4) if cell[0]!=0
+                4'd11: rom_data = 8'b000_00001;  // >        Move to cell[1] (newline)
+                4'd12: rom_data = 8'b100_00000;  // .        Output newline
+                4'd13: rom_data = 8'h00;         // HALT     End of program
+                4'd14: rom_data = 8'h00;         // HALT
+                4'd15: rom_data = 8'h00;         // HALT
                 default: rom_data = 8'h00;       // Safety: HALT for unused addresses
             endcase
         end

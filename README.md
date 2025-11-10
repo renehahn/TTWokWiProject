@@ -18,8 +18,9 @@ TinyBF is a complete hardware implementation of a Brainfuck interpreter designed
 
 1. **Power on**: Release reset (`rst_n` high) - ROM is immediately ready
 2. **Start execution**: Pulse `START` input (`ui[1]`)
-3. **Monitor via UART**: Connect to `UART_TX` (`uo[0]`) at 38400 baud
-4. **Debug**: Observe PC on `uo[4:2]`, DP on `uio[2:0]`, cell value on `{uo[7:6], uio[7:3]}`
+3. **Send input**: Type lowercase letters via UART RX at 38400 baud, end with null (0x00)
+4. **Monitor via UART**: Observe uppercase output on `UART_TX` (`uo[0]`)
+5. **Debug**: Observe PC on `uo[5:2]`, DP on `uio[2:0]`, cell value on `{uo[7:6], uio[7:3]}`
 
 ## Documentation
 
@@ -45,36 +46,38 @@ TinyBF is a complete hardware implementation of a Brainfuck interpreter designed
 
 ## Hardcoded Program
 
-The ROM contains a nested loop demonstration (16 instructions):
+The ROM contains a UART case converter demonstration (16 instructions):
 
 ```brainfuck
-+3     cell[0] = 3
+,      Read character from UART into cell[0]
+>      Move to cell[1]
++10    cell[1] = 10 (newline character)
+<      Back to cell[0]
 [      Loop while cell[0] != 0:
->        Move to cell[1]
-+        cell[1]++
-<        Move back to cell[0]
--        cell[0]--
+-15      Subtract 15
+-15      Subtract 15 (total -30)
+-2       Subtract 2 (total -32, lowercase→uppercase)
+.        Output converted character
+,        Read next character
 ]      End loop
 >      Move to cell[1]
-[      Loop while cell[1] != 0:
->        Move to cell[2]
-+        cell[2]++
-<        Move back to cell[1]
--        cell[1]--
-]      End loop
->      Move to cell[2]
-.      Output cell[2] (= 0x03)
+.      Output newline (0x0A)
+HALT   End of program
 ```
 
-**Result:** Nested copy from cell[0] → cell[1] → cell[2], outputs 0x03 via UART.
+**Function:** Interactive UART-based case converter that converts lowercase ASCII to uppercase.
 
-**Program Flow:**
-1. Initialize cell[0] = 3
-2. First loop (3 iterations): copy cell[0] to cell[1]
-3. Move to cell[1]
-4. Second loop (3 iterations): copy cell[1] to cell[2]
-5. After loops: cell[0]=0, cell[1]=0, cell[2]=3
-6. Output cell[2] (0x03) via UART TX
+**Example Usage:**
+- Input: `"abc"` followed by null (0x00)
+- Output: `"ABC\n"`
+- Conversion: 'a' (0x61) - 32 = 'A' (0x41), 'b' (0x62) - 32 = 'B' (0x42), etc.
+
+**Features Demonstrated:**
+1. UART input (`,` command) - reads characters from serial
+2. UART output (`.` command) - writes characters to serial
+3. Arithmetic operations - subtracts 32 via three decrements (-15, -15, -2)
+4. Conditional loops (`[`, `]`) - processes until null terminator
+5. Multi-cell usage - cell[0] for data, cell[1] for newline constant
 
 
 ## What is Tiny Tapeout?

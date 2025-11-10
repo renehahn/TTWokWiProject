@@ -136,7 +136,7 @@ module control_unit #(
     
     // PC arithmetic with sign extension for jumps
     // Note: Jumps are PC-relative (not PC+1 relative), this means offset=-1 goes back one instruction
-    // When ADDR_W=3, arg5 is already 5 bits so just truncate to ADDR_W+1=4 bits with sign extension
+    // When ADDR_W=4, arg5 is 5 bits so we extend to ADDR_W+1=5 bits for signed arithmetic
     wire signed [ADDR_W:0] arg_signed = $signed(arg5[ADDR_W:0]);
     wire signed [ADDR_W:0] pc_ext = $signed({1'b0, pc});
     /* verilator lint_off UNUSEDSIGNAL */

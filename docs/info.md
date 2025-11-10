@@ -27,30 +27,34 @@ The system consists of five main components:
 
 ### Hardcoded Program
 
-The ROM contains a nested loop that demonstrates loop control, arithmetic, and pointer movement (16 instructions):
+The ROM contains a UART-based case converter that demonstrates input, arithmetic, loops, and output (16 instructions):
 
 ```
 Address | Instruction | Description
 --------|-------------|------------
-0       | +3          | cell[0] = 3
-1       | [ +5        | Jump forward 5 if cell[0] == 0 (to address 6)
-2       | >           | Move to cell[1]
-3       | +1          | cell[1]++
-4       | <           | Move back to cell[0]
-5       | -1          | cell[0]--
-6       | ] -5        | Jump back -5 if cell[0] != 0 (to address 1)
-7       | >           | Move to cell[1]
-8       | [ +5        | Jump forward 5 if cell[1] == 0 (to address 13)
-9       | >           | Move to cell[2]
-10      | +1          | cell[2]++
-11      | <           | Move back to cell[1]
-12      | -1          | cell[1]--
-13      | ] -5        | Jump back -5 if cell[1] != 0 (to address 8)
-14      | >           | Move to cell[2]
-15      | .           | Output cell[2] (should be 0x03)
+0       | ,           | Read character from UART into cell[0]
+1       | >           | Move to cell[1]
+2       | +10         | cell[1] = 10 (newline character)
+3       | <           | Back to cell[0]
+4       | [ +6        | Jump forward 6 if cell[0] == 0 (to address 10)
+5       | -15         | Subtract 15 from cell[0]
+6       | -15         | Subtract 15 from cell[0] (total -30)
+7       | -2          | Subtract 2 from cell[0] (total -32)
+8       | .           | Output cell[0] via UART
+9       | ,           | Read next character
+10      | ] -6        | Jump back -6 if cell[0] != 0 (to address 4)
+11      | >           | Move to cell[1]
+12      | .           | Output newline (cell[1] = 10)
+13-15   | HALT        | End of program
 ```
 
-**Program behavior:** Initializes cell[0] to 3, copies it to cell[1] via first loop, then copies cell[1] to cell[2] via second loop. After execution, cell[0]=0, cell[1]=0, cell[2]=3. Finally outputs cell[2] (0x03) via UART.
+**Program behavior:** Reads ASCII characters from UART RX (`,` command). For each non-null character, subtracts 32 (via -15, -15, -2) to convert lowercase to uppercase, then outputs via UART TX (`.` command). On null terminator (0x00), exits loop and outputs newline (0x0A).
+
+**Example:** Input `"abc"` → Output `"ABC\n"`
+- 'a' (0x61 = 97) → -32 → 'A' (0x41 = 65)
+- 'b' (0x62 = 98) → -32 → 'B' (0x42 = 66)
+- 'c' (0x63 = 99) → -32 → 'C' (0x43 = 67)
+- null (0x00) → exit loop → output '\n' (0x0A)
 
 ### Instruction Set
 
@@ -103,21 +107,22 @@ The program ROM provides registered outputs with 1-cycle latency, maintaining ti
 2. **Start Execution**: Pulse the START input (`ui[1]`) high for at least one clock cycle. The CPU will begin executing the hardcoded ROM program.
 
 3. **Expected Behavior**:
-   - **Loop execution**: The program executes two nested loops
-   - **Final state**: cell[0]=0, cell[1]=0, cell[2]=3, DP=2
-   - **UART output**: One byte 0x03 sent via UART TX
-   - **Completion**: Program counter wraps to 0 after instruction 15
+   - **UART Input**: Program waits for character input on UART RX
+   - **Case conversion**: Converts lowercase ASCII to uppercase (subtracts 32)
+   - **UART output**: Outputs converted characters via UART TX
+   - **Loop termination**: Exits on null character (0x00), outputs newline (0x0A)
 
 4. **Monitor Execution**: 
    - Watch `CPU_BUSY` (`uo[1]`) to see when the program is running
    - Observe the program counter on `uo[5:2]` cycling through addresses 0-15
-   - Monitor the data pointer on `uio[2:0]` switching between 0, 1, and 2
-   - Track cell values on `{uo[7:6], uio[7:3]}` changing during arithmetic operations
+   - Monitor the data pointer on `uio[2:0]` switching between cells 0 and 1
+   - Track cell values on `{uo[7:6], uio[7:3]}` showing ASCII codes during conversion
 
 5. **UART Communication**:
    - Connect a UART terminal to `ui[0]` (RX) and `uo[0]` (TX) at 38400 baud, 8N1 format
-   - You should receive byte `0x03` after the loops complete
-   - The `,` (input) command is available in the instruction set but not used in this demo program
+   - Send lowercase characters like `"abc"` followed by null terminator (0x00)
+   - You should receive uppercase output `"ABC\n"`
+   - The program demonstrates interactive UART I/O with both `,` (input) and `.` (output) commands
 
 6. **Program Restart**: To run the program again, pulse START (`ui[1]`) or reset the system.
 

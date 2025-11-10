@@ -9,7 +9,7 @@
 // Description:
 //   Standard 8N1 UART receiver (1 start, 8 data LSB-first, 1 stop)
 //   4-state FSM with 3-stage input synchronizer for metastability protection
-//   16x oversampling for mid-bit sampling
+//   16x oversampling for mid-bit sampling at tick 7 (center of each bit period)
 //
 // Parameters:
 //   None
@@ -75,6 +75,7 @@ module uart_rx (
                 IDLE: begin
                     rx_busy_o <= 1'b0;
                     tick_cnt <= 4'd0;
+                    bit_cnt <= 3'd0;
                     
                     // Detect start bit (falling edge)
                     if (!rx) begin
@@ -84,20 +85,16 @@ module uart_rx (
                 end
 
                 START_BIT: begin
-                    rx_busy_o <= 1'b1;
-                    
                     if (baud_tick_16x_i) begin
-                        // Sample at middle of bit (count 7 of 0-15)
+                        // Sample at middle of bit (tick 7 of 0-15)
                         if (tick_cnt == 4'd7) begin
                             if (!rx) begin
-                                // Valid start bit confirmed
+                                // Valid start bit confirmed, start receiving data
                                 state <= DATA_BITS;
                                 tick_cnt <= 4'd0;
-                                bit_cnt <= 3'd0;
                             end else begin
-                                // False start bit, return to idle
+                                // False start bit (glitch), return to idle
                                 state <= IDLE;
-                                rx_busy_o <= 1'b0;
                             end
                         end else begin
                             tick_cnt <= tick_cnt + 1'b1;
@@ -106,41 +103,42 @@ module uart_rx (
                 end
 
                 DATA_BITS: begin
-                    rx_busy_o <= 1'b1;
-                    
                     if (baud_tick_16x_i) begin
-                        // Sample at middle of bit (count 15 of 0-15)
-                        if (tick_cnt == 4'd15) begin
+                        tick_cnt <= tick_cnt + 1'b1;
+                        
+                        // Sample at middle of bit (tick 7 of 0-15)
+                        if (tick_cnt == 4'd7) begin
                             // Sample data bit (LSB first)
                             shift_reg <= {rx, shift_reg[7:1]};
-                            tick_cnt <= 4'd0;
                             
+                            // Check if all 8 bits received
                             if (bit_cnt == 3'd7) begin
-                                // All data bits received
                                 state <= STOP_BIT;
+                                tick_cnt <= 4'd0;
                             end else begin
                                 bit_cnt <= bit_cnt + 1'b1;
                             end
-                        end else begin
-                            tick_cnt <= tick_cnt + 1'b1;
+                        end
+                        
+                        // Reset tick counter for next bit
+                        if (tick_cnt == 4'd15) begin
+                            tick_cnt <= 4'd0;
                         end
                     end
                 end
 
                 STOP_BIT: begin
-                    rx_busy_o <= 1'b1;
-                    
                     if (baud_tick_16x_i) begin
-                        // Sample stop bit at middle
-                        if (tick_cnt == 4'd15) begin
+                        // Sample stop bit at middle (tick 7)
+                        if (tick_cnt == 4'd7) begin
                             if (rx) begin
-                                // Valid stop bit
+                                // Valid stop bit - output data
                                 rx_data_o <= shift_reg;
                                 rx_valid_o <= 1'b1;
                             end
-                            // Return to idle regardless (discard on framing error)
+                            // Note: On framing error (stop bit low), data is discarded
+                            // Return to idle regardless of stop bit state
                             state <= IDLE;
-                            rx_busy_o <= 1'b0;
                         end else begin
                             tick_cnt <= tick_cnt + 1'b1;
                         end

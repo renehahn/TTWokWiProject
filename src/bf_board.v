@@ -25,7 +25,8 @@
 //   Dedicated Outputs (uo_out):
 //     uo[0]:     UART TX serial output (for Brainfuck '.' output command)
 //     uo[1]:     CPU busy status (high when executing)
-//     uo[5:2]:   Program counter [3:0]
+//     uo[4:2]:   Program counter [2:0]
+//     uo[5]:     Unused (was PC[3])
 //     uo[7:6]:   Current cell value [6:5] (upper 2 bits)
 //=============================================================================
 
@@ -95,17 +96,12 @@ module tt_um_rh_bf_top (
         .uart_rx_i     (ui_in[0]),     // UART RX from ui[0]
         .uart_tx_o     (uo_out[0]),    // UART TX to uo[0]
         
-        // Program upload interface (tied off - program is pre-loaded)
-        .prog_we_i     (1'b0),         // No external programming
-        .prog_waddr_i  (4'b0000),      // Unused
-        .prog_wdata_i  (8'h00),        // Unused
-        
         // CPU control
         .start_i       (ui_in[1]),     // Start execution from ui[1]
         .halt_i        (ui_in[2]),     // Halt execution from ui[2]
         
         // Debug outputs
-        .pc_o          (pc),           // Program counter to uo[5:2]
+        .pc_o          (pc),           // Program counter to uo[4:2]
         .dp_o          (dp),           // Data pointer to uio[2:0]
         .cell_data_o   (cell_data),    // Cell data to uio[7:3] and uo[7:6]
         .cpu_busy_o    (cpu_busy)      // CPU busy to uo[1]

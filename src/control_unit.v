@@ -4,15 +4,15 @@
 // Project:     TinyBF - Tiny Tapeout Sky 25B Brainfuck ASIC CPU
 // Author:      René Hahn
 // Date:        2025-11-10
-// Version:     1.0
+// Version:     2.0
 //
 // Description:
 //   Main CPU execution unit implementing Brainfuck instruction set
-//   11-state FSM with one-hot encoding
+//   11-state FSM with binary encoding (4-bit state register)
 //   Synchronous memory interfaces with 1-cycle read latency
 //
 // Parameters:
-//   ADDR_W:      Program memory address width (default 4 = 16 instructions)
+//   ADDR_W:      Program memory address width (default 3 = 8 instructions)
 //   INSTR_W:     Instruction width (default 8 bits)
 //   CELL_W:      Data cell width (default 8 bits)
 //   TAPE_ADDR_W: Data tape address width (default 3 = 8 cells)

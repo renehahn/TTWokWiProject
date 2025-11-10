@@ -4,26 +4,24 @@
 // Project:     TinyBF - Tiny Tapeout Sky 25B Brainfuck ASIC CPU
 // Author:      René Hahn
 // Date:        2025-11-10
-// Version:     1.0
+// Version:     2.0
 //
 // Description:
 //   Complete Brainfuck interpreter for ASIC implementation
-//   Integrates: CPU core, program memory, tape memory, UART (TX/RX), baud generator
+//   Integrates: CPU core, ROM program memory, tape memory, UART (TX/RX), baud generator
+//   Program is hardcoded in ROM - no external programming interface
 //
 // Parameters:
-//   ADDR_W:      Program memory address width (default 4 = 16 instructions)
+//   ADDR_W:      Program memory address width (default 3 = 8 instructions)
 //   TAPE_ADDR_W: Data tape address width (default 3 = 8 cells)
 //   CLK_FREQ:    System clock frequency in Hz (default 50MHz)
-//   BAUD_RATE:   UART baud rate in bps (default 115200)
+//   BAUD_RATE:   UART baud rate in bps (default 38400)
 // 
 // Interfaces:
 //   clk_i:        System clock input
 //   rst_i:        Asynchronous active-low reset input
 //   uart_rx_i:    UART receive line input
 //   uart_tx_o:    UART transmit line output    
-//   prog_we_i:    Program memory write enable input
-//   prog_waddr_i: Program memory write address input
-//   prog_wdata_i: Program memory write data input (8-bit instruction)
 //   start_i:      Start program execution input (pulse)
 //   halt_i:       Halt execution input (pulse)
 //   pc_o:         Program counter output (for debugging)
@@ -34,10 +32,10 @@
 
 `timescale 1ns/1ps
 module bf_top #(
-    parameter ADDR_W = 3,              // Program address width (8 entries, reduced from 16)
+    parameter ADDR_W = 3,              // Program address width (8 entries)
     parameter TAPE_ADDR_W = 3,         // Tape address width (8 cells)
     parameter CLK_FREQ = 50000000,     // System clock frequency (Hz)
-    parameter BAUD_RATE = 38400        // UART baud rate (was 115200, reduced to save area)
+    parameter BAUD_RATE = 38400        // UART baud rate (reduced from 115200 to save area)
 )(
     // Clock and reset
     input  wire                  clk_i,
@@ -46,11 +44,6 @@ module bf_top #(
     // UART interface
     input  wire                  uart_rx_i,    // UART receive line
     output wire                  uart_tx_o,    // UART transmit line
-    
-    // Program upload interface
-    input  wire                  prog_we_i,    // Program write enable
-    input  wire [ADDR_W-1:0]     prog_waddr_i, // Program write address
-    input  wire [7:0]            prog_wdata_i, // Program write data (8-bit instruction)
     
     // CPU control
     input  wire                  start_i,      // Start program execution (pulse)
@@ -78,7 +71,7 @@ module bf_top #(
     wire tick_1x;        // 1x baud tick for TX
     wire tick_16x;       // 16x oversampled tick for RX
     
-    // Program memory interface
+    // Program memory interface (ROM - read only)
     wire [ADDR_W-1:0]     prog_raddr;
     wire                  prog_ren;
     wire [INSTR_W-1:0]    prog_rdata;
@@ -164,7 +157,7 @@ module bf_top #(
     );
 
     //========================================================================
-    // Program Memory
+    // Program Memory (ROM - Read Only)
     //========================================================================
     // Stores Brainfuck instructions
     
@@ -174,9 +167,6 @@ module bf_top #(
     ) u_prog_mem (
         .clk_i   (clk_i),
         .rst_i   (sync_rst_n),
-        .wen_i   (prog_we_i),
-        .waddr_i (prog_waddr_i),
-        .wdata_i (prog_wdata_i),
         .ren_i   (prog_ren),
         .raddr_i (prog_raddr),
         .rdata_o (prog_rdata)

@@ -13,7 +13,7 @@
 //
 // Parameters:
 //   CLK_FREQ:  System clock frequency in Hz (default 50,000,000)
-//   BAUD_RATE: Target baud rate in bps (default 115,200)
+//   BAUD_RATE: Target baud rate in bps (default 115200, TinyBF uses 38400)
 //
 // Interfaces:
 //   clk_i:      System clock

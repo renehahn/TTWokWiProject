@@ -2,24 +2,24 @@
 
 # TinyBF - Brainfuck CPU for Tiny Tapeout
 
-TinyBF is a complete hardware implementation of a Brainfuck interpreter designed for ASIC fabrication through Tiny Tapeout. The design fits within a single tile and includes a full CPU with UART I/O capabilities.
+TinyBF is a complete hardware implementation of a Brainfuck interpreter designed for ASIC fabrication through Tiny Tapeout. The design fits within a single tile and includes a full CPU with UART I/O capabilities and a hardcoded demonstration program.
 
 ## Features
 
 - **Complete Brainfuck interpreter** with all 8 commands plus optimized instruction encoding
-- **11-state FSM CPU core** with one-hot encoding
-- **16×8-bit program memory** for storing compiled Brainfuck programs
-- **8×8-bit tape memory** (data cells) for program execution
-- **Full UART subsystem** (TX/RX) at 115200 baud for I/O operations
+- **11-state FSM CPU core** with binary encoding for minimal gate count
+- **8×8-bit ROM program memory** containing hardcoded demonstration program
+- **8×8-bit RAM tape memory** (data cells) for program execution
+- **Full UART subsystem** (TX/RX) at 38400 baud for I/O operations
 - **Optimized instruction set** with 5-bit arguments for compact programs
 - **Debug outputs** for program counter, data pointer, and cell values
 
 ## Quick Start
 
-1. **Power on**: Release reset (`rst_n` high)
+1. **Power on**: Release reset (`rst_n` high) - ROM is immediately ready
 2. **Start execution**: Pulse `START` input (`ui[1]`)
-3. **Monitor via UART**: Connect to `UART_TX` (`uo[0]`) at 115200 baud
-4. **Debug**: Observe PC on `uo[5:2]`, DP on `uio[2:0]`, cell value on `{uo[7:6], uio[7:3]}`
+3. **Monitor via UART**: Connect to `UART_TX` (`uo[0]`) at 38400 baud
+4. **Debug**: Observe PC on `uo[4:2]`, DP on `uio[2:0]`, cell value on `{uo[7:6], uio[7:3]}`
 
 ## Documentation
 
@@ -36,31 +36,37 @@ TinyBF is a complete hardware implementation of a Brainfuck interpreter designed
 ### Outputs  
 - `uo[0]` - UART TX (serial output for `.` command)
 - `uo[1]` - CPU_BUSY (execution status)
-- `uo[5:2]` - Program Counter [3:0]
+- `uo[4:2]` - Program Counter [2:0] (addresses 0-7)
+- `uo[5]` - Unused (was PC[3])
 - `uo[7:6]` - Cell Value [6:5]
 
 ### Bidirectional (all outputs)
 - `uio[2:0]` - Data Pointer [2:0]
 - `uio[7:3]` - Cell Value [4:0]
 
-## Current Status
+## Hardcoded Program
 
-This version includes a pre-loaded test program that exercises all 8 Brainfuck opcodes. The program is loaded into memory automatically during the reset.
+The ROM contains a cell copy loop demonstration:
 
-**Test Program Flow:**
-1. Initialize cells with values using `+` and `-`
-2. Navigate tape using `>` and `<`
-3. Output a byte via UART using `.`
-4. Wait for input via UART using `,`
-5. Demonstrate conditional jumps using `[` (JZ) and `]` (JNZ)
-6. End with HALT instruction
+```brainfuck
++3     cell[0] = 3
+[      Loop while cell[0] != 0:
+>        Move to cell[1]
++        cell[1]++
+<        Move back to cell[0]
+-        cell[0]--
+]      End loop
+.      Output cell[0] (= 0x00)
+```
 
-**Startup Sequence:**
-- On power-up/reset, the CPU waits 16 clock cycles while program memory initializes
-- After initialization, pulse START to begin execution
-- The program demonstrates cell arithmetic, data pointer movement, UART I/O, and loop control
+**Result:** Copies value 3 from cell[0] to cell[1], outputs 0x00 via UART.
 
-Future enhancements will include UART-based dynamic program loading.
+**Program Flow:**
+1. Initialize cell[0] = 3
+2. Loop 3 times: increment cell[1], decrement cell[0]
+3. After loop: cell[0]=0, cell[1]=3
+4. Output cell[0] (0x00) via UART TX
+
 
 ## What is Tiny Tapeout?
 

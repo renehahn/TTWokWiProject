@@ -1,8 +1,9 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-/* This testbench just instantiates the module and makes some convenient wires
-   that can be driven / tested by the cocotb test.py.
+/* Minimal dummy testbench for TinyBF Brainfuck CPU
+   This testbench instantiates the module and runs it for a few cycles
+   to verify basic compilation and instantiation work correctly.
 */
 module tb ();
 
@@ -27,8 +28,8 @@ module tb ();
   wire VGND = 1'b0;
 `endif
 
-  // Replace tt_um_example with your module name:
-  tt_um_example user_project (
+  // Instantiate TinyBF Brainfuck CPU:
+  tt_um_rh_bf_top user_project (
 
       // Include power ports for the Gate Level test:
 `ifdef GL_TEST

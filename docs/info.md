@@ -71,22 +71,48 @@ Both memories use synchronous reads with 1-cycle latency. The control unit expli
 
 1. **Power-up and Reset**: Apply power and ensure `rst_n` is asserted low, then released high. The CPU will enter IDLE state.
 
-2. **Load Program**: In this version, programs are pre-loaded into program memory during synthesis. Future versions will support dynamic programming via UART.
+2. **Pre-loaded Test Program**: The design includes a built-in test program that exercises all 8 Brainfuck opcodes:
+   ```
+   Address | Instruction | Description
+   --------|-------------|------------
+   0       | + by 5      | cell[0] = 5
+   1       | >           | Move to cell[1]
+   2       | + by 3      | cell[1] = 3
+   3       | - by 1      | cell[1] = 2
+   4       | <           | Move to cell[0]
+   5       | .           | Output cell[0] (sends 0x05 via UART)
+   6       | ,           | Input from UART to cell[0]
+   7       | [ (JZ +2)   | If cell[0]==0, skip to address 9
+   8       | .           | Output cell[0] (if not zero)
+   9       | >           | Move to cell[1]
+   10      | ] (JNZ -6)  | If cell[1]!=0, loop back to address 4
+   11      | HALT        | End program
+   ```
+   
+   **Important:** After reset, the program memory requires 16 clock cycles to initialize before the CPU can start execution.
 
-3. **Start Execution**: Pulse the START input (`ui[1]`) high for at least one clock cycle. The CPU will begin fetching and executing instructions from address 0.
+3. **Start Execution**: Pulse the START input (`ui[1]`) high for at least one clock cycle. The CPU will begin executing the test program.
 
-4. **Monitor Execution**: 
+4. **Expected Behavior**:
+   - **First output**: The program will send `0x05` via UART TX
+   - **Wait for input**: The program pauses at the `,` command, waiting for one byte on UART RX
+   - **Conditional output**: If the input byte is non-zero, it outputs that byte; if zero, skips
+   - **Loop execution**: The program loops back using the `]` (JNZ) instruction, demonstrating loop control
+   - **Completion**: Eventually reaches HALT and stops
+
+5. **Monitor Execution**: 
    - Watch `CPU_BUSY` (`uo[1]`) to see when the program is running
-   - Observe the program counter on `uo[5:2]` to track instruction flow
-   - Monitor the data pointer on `uio[2:0]` and cell value on `{uo[7:6], uio[7:3]}` to see data manipulation
+   - Observe the program counter on `uo[5:2]` cycling through addresses 0-11
+   - Monitor the data pointer on `uio[2:0]` switching between 0 and 1
+   - Track cell values on `{uo[7:6], uio[7:3]}` changing during arithmetic operations
 
-5. **UART Communication**:
+6. **UART Communication**:
    - Connect a UART terminal to `ui[0]` (RX) and `uo[0]` (TX) at 115200 baud, 8N1 format
-   - When the program executes a `,` command, it will wait for input on the RX line
-   - When the program executes a `.` command, it will transmit the current cell value on the TX line
+   - You should receive byte `0x05` shortly after starting
+   - Send any byte when the CPU waits at the `,` instruction
+   - Observe the conditional and loop behavior based on your input
 
-6. **Program Completion**: The program halts when it executes a `0x00` instruction or when you pulse the HALT input (`ui[2]`).
-
+7. **Program Completion**: The program completes when it reaches the HALT instruction at address 11, or you can force stop by pulsing HALT input (`ui[2]`).
 
 ## External hardware
 

@@ -45,7 +45,22 @@ TinyBF is a complete hardware implementation of a Brainfuck interpreter designed
 
 ## Current Status
 
-This version uses pre-loaded programs in program memory. Future enhancements will include UART-based dynamic program loading.
+This version includes a pre-loaded test program that exercises all 8 Brainfuck opcodes. The program is loaded into memory automatically during the reset.
+
+**Test Program Flow:**
+1. Initialize cells with values using `+` and `-`
+2. Navigate tape using `>` and `<`
+3. Output a byte via UART using `.`
+4. Wait for input via UART using `,`
+5. Demonstrate conditional jumps using `[` (JZ) and `]` (JNZ)
+6. End with HALT instruction
+
+**Startup Sequence:**
+- On power-up/reset, the CPU waits 16 clock cycles while program memory initializes
+- After initialization, pulse START to begin execution
+- The program demonstrates cell arithmetic, data pointer movement, UART I/O, and loop control
+
+Future enhancements will include UART-based dynamic program loading.
 
 ## What is Tiny Tapeout?
 

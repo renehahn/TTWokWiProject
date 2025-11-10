@@ -8,8 +8,13 @@
 //
 // Description:
 //   Synchronous dual-port RAM for Brainfuck program instructions
+//   Pre-loaded with test program
 //   Write-first semantics (simultaneous read/write returns new data)
 //   1-cycle read latency
+//
+// Initialization:
+//   On reset, automatically loads a test program that exercises all 8 opcodes
+//   Initialization takes DEPTH clock cycles (16 cycles for default config)
 //
 // Parameters:
 //   DATA_W: Instruction width in bits (default 8)
@@ -17,8 +22,8 @@
 //
 // Interfaces:
 //   clk_i:   System clock
-//   rst_i:   Active-low reset (unused, lint_off applied)
-//   wen_i:   Write enable
+//   rst_i:   Active-low reset - triggers program initialization
+//   wen_i:   Write enable (only effective after initialization completes)
 //   waddr_i: Write address
 //   wdata_i: Write data
 //   ren_i:   Read enable
@@ -31,9 +36,7 @@ module program_memory #(
     parameter integer DEPTH  = 16
 ) (
     input  wire                      clk_i,
-    /* verilator lint_off UNUSEDSIGNAL */
-    input  wire                      rst_i,  // Unused: Memory initialized via initial block
-    /* verilator lint_on UNUSEDSIGNAL */
+    input  wire                      rst_i,  // Active-low reset for memory initialization
     // Write port
     input  wire                      wen_i,
     input  wire [$clog2(DEPTH)-1:0]  waddr_i,
@@ -47,32 +50,70 @@ module program_memory #(
     // Memory storage array
     reg [DATA_W-1:0] mem [0:DEPTH-1];
 
-    // Initialize memory to zero
-    integer i;
-    initial begin
-        for (i = 0; i < DEPTH; i = i + 1) begin
-            mem[i] = {DATA_W{1'b0}};
+    // ROM-like initialization function for synthesizable default program
+    // Returns the test program instruction for given address
+    function [DATA_W-1:0] get_default_program;
+        input [$clog2(DEPTH)-1:0] addr;
+        begin
+            case (addr)
+                4'd0:  get_default_program = 8'b010_00101;  // + by 5
+                4'd1:  get_default_program = 8'b000_00001;  // >
+                4'd2:  get_default_program = 8'b010_00011;  // + by 3
+                4'd3:  get_default_program = 8'b011_00001;  // - by 1
+                4'd4:  get_default_program = 8'b001_00001;  // <
+                4'd5:  get_default_program = 8'b100_00000;  // .
+                4'd6:  get_default_program = 8'b101_00000;  // ,
+                4'd7:  get_default_program = 8'b110_00010;  // JZ +2
+                4'd8:  get_default_program = 8'b100_00000;  // .
+                4'd9:  get_default_program = 8'b000_00001;  // >
+                4'd10: get_default_program = 8'b111_11010;  // JNZ -6
+                default: get_default_program = 8'h00;       // HALT
+            endcase
+        end
+    endfunction
+
+    // Memory initialization state machine
+    reg init_done;
+    reg [$clog2(DEPTH)-1:0] init_addr;
+
+    // Synchronous reset, initialization, and write operations
+    always @(posedge clk_i or negedge rst_i) begin
+        if (!rst_i) begin
+            init_done <= 1'b0;
+            init_addr <= {$clog2(DEPTH){1'b0}};
+        end else begin
+            if (!init_done) begin
+                // Priority: Initialization (blocks external writes)
+                mem[init_addr] <= get_default_program(init_addr);
+                if (init_addr == DEPTH - 1) begin
+                    init_done <= 1'b1;
+                end else begin
+                    init_addr <= init_addr + 1'b1;
+                end
+            end else if (wen_i) begin
+                // Only allow external writes after initialization completes
+                mem[waddr_i] <= wdata_i;
+            end
         end
     end
 
-    // Synchronous write and read with write-first behavior
-    always @(posedge clk_i) begin
-        // Write operation
-        if (wen_i) begin
-            mem[waddr_i] <= wdata_i;
-        end
-
-        // Read operation with write-first semantics
-        if (ren_i) begin
-            if (wen_i && (waddr_i == raddr_i)) begin
-                // Write-first: return the data being written
-                rdata_o <= wdata_i;
-            end else begin
-                // Normal read from memory
-                rdata_o <= mem[raddr_i];
+    // Synchronous read with write-first behavior
+    always @(posedge clk_i or negedge rst_i) begin
+        if (!rst_i) begin
+            rdata_o <= {DATA_W{1'b0}};
+        end else begin
+            // Read operation with write-first semantics
+            if (ren_i) begin
+                if (wen_i && init_done && (waddr_i == raddr_i)) begin
+                    // Write-first: return the data being written
+                    rdata_o <= wdata_i;
+                end else begin
+                    // Normal read from memory
+                    rdata_o <= mem[raddr_i];
+                end
             end
+            // Note: If ren_i is low, rdata_o retains its previous value
         end
-        // Note: If ren_i is low, rdata_o retains its previous value
     end
 
 endmodule

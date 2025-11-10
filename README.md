@@ -1,27 +1,57 @@
 ![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg) ![](../../workflows/fpga/badge.svg)
 
-# Tiny Tapeout Verilog Project Template
+# TinyBF - Brainfuck CPU for Tiny Tapeout
 
-- [Read the documentation for project](docs/info.md)
+TinyBF is a complete hardware implementation of a Brainfuck interpreter designed for ASIC fabrication through Tiny Tapeout. The design fits within a single tile and includes a full CPU with UART I/O capabilities.
+
+## Features
+
+- **Complete Brainfuck interpreter** with all 8 commands plus optimized instruction encoding
+- **11-state FSM CPU core** with one-hot encoding
+- **16×8-bit program memory** for storing compiled Brainfuck programs
+- **8×8-bit tape memory** (data cells) for program execution
+- **Full UART subsystem** (TX/RX) at 115200 baud for I/O operations
+- **Optimized instruction set** with 5-bit arguments for compact programs
+- **Debug outputs** for program counter, data pointer, and cell values
+
+## Quick Start
+
+1. **Power on**: Release reset (`rst_n` high)
+2. **Start execution**: Pulse `START` input (`ui[1]`)
+3. **Monitor via UART**: Connect to `UART_TX` (`uo[0]`) at 115200 baud
+4. **Debug**: Observe PC on `uo[5:2]`, DP on `uio[2:0]`, cell value on `{uo[7:6], uio[7:3]}`
+
+## Documentation
+
+- **[Detailed documentation](docs/info.md)** - Complete project description, architecture, and usage guide
+- **[Pin assignments](info.yaml)** - Full pinout configuration
+
+## Pin Mapping
+
+### Inputs
+- `ui[0]` - UART RX (serial input for `,` command)
+- `ui[1]` - START (begin execution)
+- `ui[2]` - HALT (stop execution)
+
+### Outputs  
+- `uo[0]` - UART TX (serial output for `.` command)
+- `uo[1]` - CPU_BUSY (execution status)
+- `uo[5:2]` - Program Counter [3:0]
+- `uo[7:6]` - Cell Value [6:5]
+
+### Bidirectional (all outputs)
+- `uio[2:0]` - Data Pointer [2:0]
+- `uio[7:3]` - Cell Value [4:0]
+
+## Current Status
+
+This version uses pre-loaded programs in program memory. Future enhancements will include UART-based dynamic program loading.
 
 ## What is Tiny Tapeout?
 
 Tiny Tapeout is an educational project that aims to make it easier and cheaper than ever to get your digital and analog designs manufactured on a real chip.
 
 To learn more and get started, visit https://tinytapeout.com.
-
-## Set up your Verilog project
-
-1. Add your Verilog files to the `src` folder.
-2. Edit the [info.yaml](info.yaml) and update information about your project, paying special attention to the `source_files` and `top_module` properties. If you are upgrading an existing Tiny Tapeout project, check out our [online info.yaml migration tool](https://tinytapeout.github.io/tt-yaml-upgrade-tool/).
-3. Edit [docs/info.md](docs/info.md) and add a description of your project.
-4. Adapt the testbench to your design. See [test/README.md](test/README.md) for more information.
-
-The GitHub action will automatically build the ASIC files using [LibreLane](https://www.zerotoasiccourse.com/terminology/librelane/).
-
-## Enable GitHub actions to build the results page
-
-- [Enabling GitHub Pages](https://tinytapeout.com/faq/#my-github-action-is-failing-on-the-pages-part)
 
 ## Resources
 
@@ -31,12 +61,6 @@ The GitHub action will automatically build the ASIC files using [LibreLane](http
 - [Join the community](https://tinytapeout.com/discord)
 - [Build your design locally](https://www.tinytapeout.com/guides/local-hardening/)
 
-## What next?
+## Author
 
-- [Submit your design to the next shuttle](https://app.tinytapeout.com/).
-- Edit [this README](README.md) and explain your design, how it works, and how to test it.
-- Share your project on your social network of choice:
-  - LinkedIn [#tinytapeout](https://www.linkedin.com/search/results/content/?keywords=%23tinytapeout) [@TinyTapeout](https://www.linkedin.com/company/100708654/)
-  - Mastodon [#tinytapeout](https://chaos.social/tags/tinytapeout) [@matthewvenn](https://chaos.social/@matthewvenn)
-  - X (formerly Twitter) [#tinytapeout](https://twitter.com/hashtag/tinytapeout) [@tinytapeout](https://twitter.com/tinytapeout)
-  - Bluesky [@tinytapeout.com](https://bsky.app/profile/tinytapeout.com)
+René Hahn - 2025

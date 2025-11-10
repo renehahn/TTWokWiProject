@@ -23,6 +23,7 @@ project:
     - "program_memory.v"
     - "tape_memory.v"
     - "uart_tx.v"
+    - "uart_rx.v"
     - "baud_gen.v"
     - "reset_sync.v"
 
@@ -30,7 +31,7 @@ project:
 # This section is for the datasheet/website. Use descriptive names (e.g., RX, TX, MOSI, SCL, SEG_A, etc.).
 pinout:
   # Inputs
-  ui[0]: "UART_RX (not connected - removed to save area)"
+  ui[0]: "UART_RX"
   ui[1]: "START"
   ui[2]: "HALT"
   ui[3]: ""

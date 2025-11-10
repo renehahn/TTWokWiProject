@@ -43,17 +43,17 @@ module tt_um_rh_bf_top (
 );
 
     //=========================================================================
-    // Parameters
+    // Parameters - REDUCED FOR AREA OPTIMIZATION
     //=========================================================================
-    localparam ADDR_W = 4;              // 16 program memory locations
+    localparam ADDR_W = 3;              // 8 program memory locations (reduced from 16)
     localparam TAPE_ADDR_W = 3;         // 8 tape cells
     localparam CLK_FREQ = 50000000;     // 50 MHz system clock
-    localparam BAUD_RATE = 115200;      // UART baud rate
+    localparam BAUD_RATE = 38400;       // UART baud rate (reduced from 115200)
 
     //=========================================================================
     // Internal Signals
     //=========================================================================
-    wire [3:0] pc;              // Program counter
+    wire [2:0] pc;              // Program counter (3-bit, reduced from 4-bit)
     wire [2:0] dp;              // Data pointer
     wire [7:0] cell_data;       // Current cell value
     wire       cpu_busy;        // CPU busy status
@@ -74,7 +74,8 @@ module tt_um_rh_bf_top (
     // Dedicated Output Assignment
     //=========================================================================
     assign uo_out[1]   = cpu_busy;         // CPU busy status
-    assign uo_out[5:2] = pc;               // Program counter [3:0]
+    assign uo_out[4:2] = pc;               // Program counter [2:0] (3-bit, reduced from 4-bit)
+    assign uo_out[5]   = 1'b0;             // Unused (was pc[3])
     assign uo_out[7:6] = cell_data[6:5];   // Current cell value [6:5] (upper 2 bits)
 
     //=========================================================================

@@ -34,10 +34,10 @@
 
 `timescale 1ns/1ps
 module bf_top #(
-    parameter ADDR_W = 4,              // Program address width (16 entries)
+    parameter ADDR_W = 3,              // Program address width (8 entries, reduced from 16)
     parameter TAPE_ADDR_W = 3,         // Tape address width (8 cells)
     parameter CLK_FREQ = 50000000,     // System clock frequency (Hz)
-    parameter BAUD_RATE = 115200       // UART baud rate (bps)
+    parameter BAUD_RATE = 38400        // UART baud rate (was 115200, reduced to save area)
 )(
     // Clock and reset
     input  wire                  clk_i,
@@ -149,19 +149,14 @@ module bf_top #(
     );
 
     //========================================================================
-    // UART Receiver
+    // UART Receiver - REMOVED TO SAVE AREA
     //========================================================================
-    // 8N1 format with 16x oversampling and 3-stage synchronizer
+    // Input instruction ',' is no longer supported (reads always return 0x00)
+    // This saves ~270 gates (~25% area reduction)
     
-    uart_rx u_uart_rx (
-        .clk_i            (clk_i),
-        .rst_i            (sync_rst_n),
-        .baud_tick_16x_i  (tick_16x),
-        .rx_serial_i      (uart_rx_i),
-        .rx_data_o        (rx_data),
-        .rx_valid_o       (rx_valid),
-        .rx_busy_o        (rx_busy)
-    );
+    assign rx_data = 8'h00;     // Always read zero
+    assign rx_valid = 1'b0;     // Never valid
+    assign rx_busy = 1'b0;      // Never busy
 
     //========================================================================
     // Program Memory

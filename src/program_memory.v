@@ -52,22 +52,18 @@ module program_memory #(
 
     // ROM-like initialization function for synthesizable default program
     // Returns the test program instruction for given address
+    // SIMPLIFIED: 8 instructions only (reduced to save area)
     function [DATA_W-1:0] get_default_program;
         input [$clog2(DEPTH)-1:0] addr;
         begin
             case (addr)
-                4'd0:  get_default_program = 8'b010_00101;  // + by 5
-                4'd1:  get_default_program = 8'b000_00001;  // >
-                4'd2:  get_default_program = 8'b010_00011;  // + by 3
-                4'd3:  get_default_program = 8'b011_00001;  // - by 1
-                4'd4:  get_default_program = 8'b001_00001;  // <
-                4'd5:  get_default_program = 8'b100_00000;  // .
-                4'd6:  get_default_program = 8'b101_00000;  // ,
-                4'd7:  get_default_program = 8'b110_00010;  // JZ +2
-                4'd8:  get_default_program = 8'b100_00000;  // .
-                4'd9:  get_default_program = 8'b000_00001;  // >
-                4'd10: get_default_program = 8'b111_11010;  // JNZ -6
-                default: get_default_program = 8'h00;       // HALT
+                3'd0:  get_default_program = 8'b010_00101;  // + by 5   (cell[0] = 5)
+                3'd1:  get_default_program = 8'b100_00000;  // .        (output cell[0])
+                3'd2:  get_default_program = 8'b000_00001;  // >        (move to cell[1])
+                3'd3:  get_default_program = 8'b010_00011;  // + by 3   (cell[1] = 3)
+                3'd4:  get_default_program = 8'b100_00000;  // .        (output cell[1])
+                3'd5:  get_default_program = 8'b111_11011;  // JNZ -5   (jump back if cell[1]!=0)
+                default: get_default_program = 8'h00;       // HALT (addresses 6-7)
             endcase
         end
     endfunction

@@ -63,7 +63,8 @@ module program_memory #(
                 3'd3:  get_default_program = 8'b010_00011;  // + by 3   (cell[1] = 3)
                 3'd4:  get_default_program = 8'b100_00000;  // .        (output cell[1])
                 3'd5:  get_default_program = 8'b111_11011;  // JNZ -5   (jump back if cell[1]!=0)
-                default: get_default_program = 8'h00;       // HALT (addresses 6-7)
+                3'd6:  get_default_program = 8'b101_00000;  // ,        (input to cell[1])
+                default: get_default_program = 8'h00;       // HALT (addresses 7)
             endcase
         end
     endfunction

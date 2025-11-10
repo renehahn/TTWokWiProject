@@ -149,14 +149,19 @@ module bf_top #(
     );
 
     //========================================================================
-    // UART Receiver - REMOVED TO SAVE AREA
+    // UART Receiver
     //========================================================================
-    // Input instruction ',' is no longer supported (reads always return 0x00)
-    // This saves ~270 gates (~25% area reduction)
+    // 8N1 format: 1 start bit, 8 data bits (LSB first), 1 stop bit
     
-    assign rx_data = 8'h00;     // Always read zero
-    assign rx_valid = 1'b0;     // Never valid
-    assign rx_busy = 1'b0;      // Never busy
+    uart_rx u_uart_rx (
+        .clk_i           (clk_i),
+        .rst_i           (sync_rst_n),
+        .baud_tick_16x_i (tick_16x),
+        .rx_serial_i     (uart_rx_i),
+        .rx_data_o       (rx_data),
+        .rx_valid_o      (rx_valid),
+        .rx_busy_o       (rx_busy)
+    );
 
     //========================================================================
     // Program Memory
@@ -250,6 +255,6 @@ module bf_top #(
     // Derive busy status from CPU outputs
     // CPU is busy when it's accessing memory or UART
     
-    assign cpu_busy_o = prog_ren || tape_ren || tape_wen || tx_start || tx_busy;
+    assign cpu_busy_o = prog_ren || tape_ren || tape_wen || tx_start || tx_busy || rx_busy;
 
 endmodule

@@ -32,6 +32,7 @@
 //   pc_out_o:            Program counter (debug)
 //   dp_out_o:            Data pointer (debug)
 //   cell_out_o:          Last read cell value (debug)
+//=============================================================================
 
 `timescale 1ns/1ps
 module control_unit #(

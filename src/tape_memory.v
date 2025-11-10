@@ -24,6 +24,7 @@
 //   wen_i:   Write enable
 //   waddr_i: Write address
 //   wdata_i: Write data
+//=============================================================================
 
 `timescale 1ns/1ps
 module tape_memory #(

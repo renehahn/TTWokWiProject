@@ -20,11 +20,12 @@
 //   rst_i:      Active-low reset
 //   tick_16x_o: 16x oversampled tick (1 clock pulse every 16x period)
 //   tick_1x_o:  1x baud tick (1 clock pulse every baud period)
+//=============================================================================
 
 `timescale 1ns/1ps
 module baud_gen #(
     parameter CLK_FREQ = 50000000,   // System clock frequency (Hz)
-    parameter BAUD_RATE = 115200     // Target baud rate (bps)
+    parameter BAUD_RATE = 38400      // Target baud rate (bps)
 )(
     input  wire        clk_i,          // System clock
     input  wire        rst_i,          // Active-low reset

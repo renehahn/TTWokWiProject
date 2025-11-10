@@ -49,7 +49,7 @@
 //   raddr_i: Read address
 //   rdata_o: Read data (valid 1 cycle after ren_i assertion)
 //
-// Note: Write port removed - ROM is not programmable
+//=============================================================================
 
 `timescale 1ns/1ps
 module program_memory #(

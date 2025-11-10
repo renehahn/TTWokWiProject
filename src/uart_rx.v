@@ -22,6 +22,7 @@
 //   rx_data_o:       Received data byte (valid when rx_valid_o high)
 //   rx_valid_o:      Data valid pulse (1 cycle)
 //   rx_busy_o:       Busy flag (high during reception)
+//=============================================================================
 
 `timescale 1ns/1ps
 module uart_rx (

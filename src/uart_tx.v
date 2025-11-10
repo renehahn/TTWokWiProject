@@ -22,6 +22,7 @@
 //   tx_data_i:    Data byte to transmit (latched on tx_start_i)
 //   tx_serial_o:  Serial output line (idles high)
 //   tx_busy_o:    Busy flag (high during transmission)
+//=============================================================================
 
 `timescale 1ns/1ps
 module uart_tx (

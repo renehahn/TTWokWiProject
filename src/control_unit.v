@@ -94,22 +94,23 @@ module control_unit #(
     localparam [7:0] INSTR_HALT = 8'h00;  // OP_DP_INC (000) + arg=0 (00000)
 
     // ----------------------------
-    // State encoding (one-hot)
+    // State encoding (binary)
     // ----------------------------
-    localparam S_IDLE        = 11'b00000000001;
-    localparam S_FETCH       = 11'b00000000010;
-    localparam S_WAIT_FETCH  = 11'b00000000100;
-    localparam S_DECODE      = 11'b00000001000;
-    localparam S_READ_CELL   = 11'b00000010000;
-    localparam S_WAIT_CELL   = 11'b00000100000;
-    localparam S_EXECUTE     = 11'b00001000000;
-    localparam S_WRITE_CELL  = 11'b00010000000;
-    localparam S_WAIT_TX     = 11'b00100000000;
-    localparam S_WAIT_RX     = 11'b01000000000;
-    localparam S_HALT        = 11'b10000000000;
+    // 11 states requires 4 bits (2^4 = 16 states)
+    localparam [3:0] S_IDLE        = 4'd0;
+    localparam [3:0] S_FETCH       = 4'd1;
+    localparam [3:0] S_WAIT_FETCH  = 4'd2;
+    localparam [3:0] S_DECODE      = 4'd3;
+    localparam [3:0] S_READ_CELL   = 4'd4;
+    localparam [3:0] S_WAIT_CELL   = 4'd5;
+    localparam [3:0] S_EXECUTE     = 4'd6;
+    localparam [3:0] S_WRITE_CELL  = 4'd7;
+    localparam [3:0] S_WAIT_TX     = 4'd8;
+    localparam [3:0] S_WAIT_RX     = 4'd9;
+    localparam [3:0] S_HALT        = 4'd10;
 
-    // State registers
-    reg [10:0] state, next_state;
+    // State registers (4 bits instead of 11 bits = 7 FFs saved)
+    reg [3:0] state, next_state;
 
     // Core registers
     reg [ADDR_W-1:0] pc, pc_next;
